@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Testing 3D visualization</title>
+    {% load static %}
+    <script type='text/javascript' src="{% static 'js/jquery.min.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/chart.min.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/three.min.js' %}" ></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/threevisualization.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/dashboard.css' %}">
+    <script type='text/javascript' src="{% static 'js/Point.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/Line.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/AnimationFrame.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/NodeChart.js' %}" ></script>
+</head>
+<body>
+    <div class="navBar">
+        <ul class="navBar-Content">
+            <li class="navBar-button">
+                <a href="{% url 'dashboard' %}" class="page-select" >Return to Dashboard</a>
+            </li>
+        </ul>
+    </div>
+    <div class="page-container">
+        <div class="left-container">
+            <div id="selected-label">Selected Node: None</div>
+            <div class="help-text">?
+                <div class="help-tooltip">
+                    <div class="tooltip-title">Canvas Controls</div>
+                    <div class="tooltip-content">
+                        <div>Left-click (hold): Rotate Camera</div>
+                        <div>Right-click (hold): Pan Camera</div>
+                        <div>Scroll: Zoom In/Out</div>
+                        <div>Left-click (on node): Highlight node</div>
+                        <div>Escape: Remove highlight</div>
+                    </div>
+                </div>
+            </div>
+            <canvas></canvas>
+        </div>
+        <div class="right-container">
+<!--            <div class="sensor-header">-->
+<!--                <span>Existing Array Name</span>-->
+<!--                <span><input class="array-name" type="text"></span>-->
+<!--            </div>-->
+            <div class="sensor-header">
+                <span>Floor Count</span>
+                <span>
+                    <input class="num-input" id="floor-count" type="number" min="0" value="0">
+                </span>
+
+                <span>Nodes Per Floor</span>
+                <span>
+                    <input class="num-input" id="nodes-floor-count" type="number" min="4" value="4">
+                </span>
+                <span>
+                    <input class="submit-temp" type="button" value="Generate New Nodes" style='    float: right;border-radius: 5px;border-color: white;'>
+                </span>
+            </div>
+
+            <div class="sensor-header-node">
+                <span>Node File</span>
+                <span>
+                    <input class="load-node-file" type="button" value="Upload File" onclick="loadNodeFile()" style="border-radius: 5px;border-color: white;">
+                    <input id="node-file-input" type="file" name="name" style="display: none;">
+                </span>
+                <input type="button" value="Export Current Nodes" onclick="exportPoints()" style="border-radius: 5px;border-color: white;">
+                <span class="sensor-file-name"></span>
+            </div>
+            <div class="point-list">
+                <div class="floor-container" id="add-floor">
+                    <input type="button" value="Add a Floor" onClick="addFloor()" style="border-color: white;border-radius: 5px;    width: 100%;">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="margin: 10px;border-color: darkgray;border-style: solid; border-radius: 3px;">
+        <div class="slide-container" style="margin: 10px;">
+            <input type="range" min="0" max="480" id="time-slider" value="0">
+        </div>
+        <div class="animation-options" style="margin: 10px;">
+            <div>
+                <span><input class="animation-toggle" type="button" value="Play"></span>
+<!--                <span>Number of in-between frames to generate</span>-->
+<!--                <span><input id="keyframe-count" type="number" class="num-input" value="60" min="1"></span>-->
+            </div>
+            <div>
+                <span>
+                    <input class="load-file" type="button" value="Load File" onclick="loadAnimationFile()">
+                    <input id="file-input" type="file" name="name" style="display: none;">
+                </span>
+                <span>Currently loaded file: </span>
+                <span class="animation-file-name"></span>
+
+            </div>
+        </div>
+    </div>
+    <div style="margin: 10px;border-color: darkgray;border-style: solid; border-radius: 3px; padding: 10px;">
+        <span class="graphLabel">X</span><canvas id="nodeChartX" height="50"></canvas>
+    </div>
+    <div style="margin: 10px;border-color: darkgray;border-style: solid; border-radius: 3px; padding: 10px;">
+        <span class="graphLabel">Y</span><canvas id="nodeChartY" height="50"></canvas>
+    </div>
+    <div style="margin: 10px;border-color: darkgray;border-style: solid; border-radius: 3px; padding: 10px;">
+        <span class="graphLabel">Z</span><canvas id="nodeChartZ" height="50"></canvas>
+    </div>
+    <div id="nodeModal" class="modal fade" role="dialog" data-backdrop="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Connected Nodes</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="connected-node-options"></div>
+                    <input type="hidden" id="current-node-parent" value="0">
+                    <input type="button" value="Update Connected Nodes" onclick="updateConnectedNodes()">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="timeModal" class="modal fade" role="dialog" data-backdrop="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Number of frames to fill</h4>
+                </div>
+                <div class="modal-body">
+                    <input id="keyframe-count" type="number" class="num-input" value="60" min="1">
+                    <input type="button" value="Generate" onclick="generateAnimation()">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var canvas = document.querySelector('canvas');
+        var canWidth = 600;
+        var canHeight = 600;
+        canvas.width = canWidth;
+        canvas.height = canHeight;
+        var arrayName = '';
+
+        var pointArray = [];
+        var geometryLines = [];
+        var targetList = [];
+
+        var floorCount = 0;
+
+        var animationFrames = [];
+        var isAnimating = false;
+        var currentTime = 0;
+        var timeMax = 480;
+        var framesBetweenPositions = 60;
+
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas });
+        scene = new THREE.Scene();
+		camera = new THREE.PerspectiveCamera(50, 1, 1, 10000);
+	    camera.position.set(0, 0, 1000);
+
+	    var raycaster = new THREE.Raycaster();
+        var mouse = new THREE.Vector2();
+
+	    controls = new THREE.OrbitControls (camera,renderer.domElement );
+        controls.update();
+
+        var geometry = new THREE.BoxGeometry( 10, 10, 10 );
+        var materialline = new THREE.LineBasicMaterial({color: 0xA35F77});
+        var geometryline = new THREE.Geometry();
+
+        var nodeChart = new NodeChart('#nodeChartX', '#nodeChartY', '#nodeChartZ');
+        nodeChart.loadChart();
+
+        function init(){
+            for(var k = 0; k < pointArray.length; k++){
+                pointArray[k].draw(scene, targetList, geometry);
+            }
+            for(var k = 0; k < pointArray.length; k++){
+                pointArray[k].drawLines(pointArray);
+            }
+        }
+
+
+
+        function updateExistingArray(){ //"existing" is in the context of the SQLite database
+            {% for node in nodes %}
+                if('{{node.nodeName}}' === arrayName){
+                    {% for point in node.point_set.all %}
+                        var point = new Point('{{point.pointName}}', {{point.xCoordinate}}, {{point.yCoordinate}}, {{point.zCoordinate}});
+                        point.setDirection();
+                        {% for connectedNode in point.connectedNodes.all %}
+                            point.connectedPoints.push('{{connectedNode}}');
+                        {% endfor %}
+                        point.range = Math.abs(({{point.yCoordinate}} / Math.sqrt(3))/2);       //update this
+                        point.dx = point.range/50;
+                        pointArray.push(point);
+                        $(".point-list").append("<div>{{point.pointName}}</div>");
+                    {% endfor %}
+                }
+            {% endfor %}
+            console.log(pointArray)
+        }
+
+        $(".array-name").on('keypress', function(e){
+            if(e.which == 13){
+                arrayName = $(".array-name").val();
+                $(".point-list").empty();
+                pointArray.length = 0;
+                geometryLines.length = 0;
+                targetList.length = 0;
+                while(scene.children.length > 0){
+                    scene.remove(scene.children[0]);
+                }
+                updateExistingArray();
+                init();
+            }
+        });
+
+        $(".submit-temp").on('click', function(e){
+            $(".point-list").empty();
+            pointArray.length = 0;
+            geometryLines.length = 0;
+            targetList.length = 0;
+            while(scene.children.length > 0){
+                scene.remove(scene.children[0]);
+            }
+            generateArray();
+            init();
+        });
+    </script>
+    <script type='text/javascript' src="{% static 'js/ListControls.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/Highlight.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/CSVController.js' %}" ></script>
+    <script type='text/javascript' src="{% static 'js/AnimationController.js' %}" ></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+    <meta charset="UTF-8">
+    <title>Dashboard Demo</title>
+    {% load static %}
+    <script type='text/javascript' src="{% static 'js/jquery.min.js' %}" ></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/dashContent.css' %}">
+    <script type='text/javascript' src="{% static 'js/chart.min.js' %}"></script>
+</head>
+<body>
+    <div class="navBar">
+        <ul class="navBar-Content">
+            <!--
+            <li class="navBar-button-functions">
+                <a href="" class="array-select" id="Test">Sensor Dashboard</a>
+            </li>
+            -->
+            <li class="navBar-button-functions">
+                <a href="" class="array-select">Sensor Dashboard</a>
+            </li>
+            <li class="navBar-button-export">
+                <a href="" class="load-sensor-file">Load Sensor File</a>
+                <input id="file-input" type="file" name="name" style="display: none;">
+            </li>
+            <li class="navBar-button-functions">
+                <a href="{% url 'threevisualization' %}" class="page-select" >3D Visualization</a>
+            </li>
+            <li class="navBar-button-export">
+                <a href="{% url 'csvexport' %}" class="page-select">CSV Export</a>
+            </li>
+            <li class="navBar-button-export">
+                <a href="{% url 'jsonexport' %}" class="page-select">JSON Export</a>
+            </li>
+        </ul>
+    </div>
+    
+
+    <div class="mainArea">
+        <div class="content">
+            <div class="add-sensor">
+                <button type="button" data-toggle="modal" data-target="#newModal" style="width:100%;font-size:30px;font-weight:20;border-style: none;">Add a Sensor</button>
+            </div>
+        </div>
+    </div>
+    <div id="newModal" class="modal fade" role="dialog" data-backdrop="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">New Sensor Name</h4>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="new-node-name">
+                    <input type="button" value="Add Node" onclick="addNode()">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="nameModal" class="modal fade" role="dialog" data-backdrop="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Input Array Name</h4>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="new-array-name">
+                    <input type="button" value="Create Array" onclick="loadContent()">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var arrayID = '';
+        var sensorIDs = ['1', '2', '3', '4'];
+        var compareCharts = [];
+        var idIndex = 0;
+        function loadContent(){
+            arrayID = $("#new-array-name").val();
+            if(!arrayID) arrayID = '';
+            compareCharts = [];
+            $(".content").empty();
+            $.get("{% static 'html/sensorContainer.html' %}", function(data){
+                for(idIndex = 0; idIndex<sensorIDs.length; idIndex++){
+                    $(".content").append(data).stop();
+                }
+                $(".content").append('<div class="add-sensor"><button type="button" data-toggle="modal" data-target="#newModal" style="width:100%;font-size:30px;font-weight:20;border-style: none;">Add a Sensor</button></div>');
+            })
+            $('#nameModal').modal('hide');
+        }
+
+        function addNode(){
+            console.log('adding node');
+            var newName = $('#new-node-name').val();
+            if(newName && newName != ""){
+                var exists = false;
+                for(var i = 0; i < sensorIDs.length; i++){
+                    if(newName === sensorIDs[i]) exists = true;
+                }
+                if(!exists){
+                    sensorIDs.push(newName);
+                    loadContent();
+                }
+                else{
+                    console.log('name already exists');
+                }
+            }
+            $('#newModal').modal('hide');
+        }
+
+        function deleteNode(name){
+            for(var i = 0; i < sensorIDs.length; i++){
+                if(sensorIDs[i] === name){
+                    sensorIDs.splice(i, 1);
+                    break;
+                }
+            }
+            loadContent();
+        }
+
+        $(".array-select").on('click', function(e){
+            e.preventDefault();
+            $('#nameModal').modal('show');
+        })
+
+        $(".load-sensor-file").on('click', function(e){
+            e.preventDefault();
+            $('#file-input').trigger('click');
+        })
+
+        $('#file-input').on('change', function(e){
+            const file = e.target.files[0];
+
+            var reader = new FileReader();
+            reader.readAsText(file,'UTF-8');
+
+            reader.onload = readerEvent => {
+                  var content = readerEvent.target.result.split(/\r?\n|\r/); //csv content
+                  var sensorNames = [];
+                  for(var i = 0; i < content.length; i++){
+                    var data = content[i].split(',');
+                    if(data[0] && data[0] != "")
+                        sensorNames.push(data[0])
+                  }
+                  sensorIDs = sensorNames;
+                  console.log(sensorIDs);
+                  loadContent();
+            }
+        })
+
+        setInterval(function(){
+            $.ajax({url: '/getCurrentValue',
+                success: function(result){
+                    var res = JSON.parse(result);
+                    for(var messageindex = 0; messageindex<res.length; messageindex++){
+                        var inputdiv = 'input-' + res[messageindex].device
+                        if(document.getElementById(inputdiv)){
+                            document.getElementById(inputdiv).innerHTML = JSON.stringify(res[messageindex])
+                        }
+                    }
+                }
+            });
+        }, 1000);
+
+        setInterval(function(){
+            for(var chartindex = 0; chartindex<compareCharts.length; chartindex++){
+                var chartID = compareCharts[chartindex].id
+                var tokenizedChartID = chartID.split('-')
+                var inputStringID = 'input-' + tokenizedChartID[0] + '-' + tokenizedChartID[3]
+                var graphID = tokenizedChartID[1]
+
+                var dataString = document.getElementById(inputStringID).innerHTML
+                var dataJSON = JSON.parse(dataString)
+                var chartData
+                if(graphID === "xyz") chartData = dataJSON.IMU
+                if(graphID === "gyro") chartData = dataJSON.Gyro
+                if(chartData){
+                    compareCharts[chartindex].chart.data.labels.push(" ");
+                    compareCharts[chartindex].chart.data.datasets[0].data.push(chartData[0]);
+                    compareCharts[chartindex].chart.data.datasets[1].data.push(chartData[1]);
+                    compareCharts[chartindex].chart.data.datasets[2].data.push(chartData[2]);
+
+                    compareCharts[chartindex].chart.data.labels.splice(0, 1);
+                    compareCharts[chartindex].chart.data.datasets[0].data.splice(0,1);
+                    compareCharts[chartindex].chart.data.datasets[1].data.splice(0,1);
+                    compareCharts[chartindex].chart.data.datasets[2].data.splice(0,1);
+
+                    compareCharts[chartindex].chart.update();
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

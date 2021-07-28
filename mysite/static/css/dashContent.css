@@ -1,0 +1,84 @@
+.sensor-container{
+    background-color: gray;
+    color: gray;
+    height: auto;
+    margin: 10px;
+    border-style: solid;
+    border-radius: 5px;
+    position:inherit;
+}
+
+.sensor-tag-div{
+    /*border-style: solid;*/
+    background-color: antiquewhite;
+    border-radius: 5px;
+    height: auto;
+    padding-left: 1%;
+    font-size: 25px;
+    font-weight: bold;
+    height: 43px;
+    text-transform: uppercase;
+}
+
+.add-sensor{
+    background-color: gray;
+    color: gray;
+    margin:10px;
+    border-style: solid;
+    border-radius: 5px;
+}
+
+.sensor-tag{
+    float: left;
+}
+
+.temp-tag{
+    float: right;
+    position: relative;
+}
+
+.sensor-label{
+    height: 15px;
+}
+
+.sensor-chart-container{
+    display: block;
+}
+
+.chart-label{
+    border-top-style: solid;
+    border-bottom-style: solid;
+    text-align: center;
+    font-weight: bold;
+    background-color: white;
+    border-radius: 5px;
+}
+
+.sensor-chart{
+    height: auto;
+    width: 100%;
+    margin-bottom: 2px;
+    display: inline-block;  
+}
+
+.canvas-container{
+    height: inherit;
+    width:inherit;
+    background-color: gainsboro;
+}
+
+.canvas-container-TEMP{
+    height: 110px;
+    width:inherit;
+    background-color: gainsboro;
+}
+
+.legend{
+    height:30px;
+    background-color: gainsboro;
+}
+
+.delete-button{
+    float: right;
+    padding-right: 10px;
+}
